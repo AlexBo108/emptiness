@@ -2,7 +2,7 @@ import csv
 import os
 
 class FileStorage:
-    """Безопасное хранение данных в CSV."""
+    """Безопасное хранение данных в CSV с автоинкрементом."""
     def __init__(self, filename="data/finance.csv"):
         self.filename = filename
         self.fieldnames = ["id", "amount", "category", "date", "comment", "op_type"]
@@ -25,7 +25,6 @@ class FileStorage:
         """Сохранение с генерацией ID и защитой от ошибок записи."""
         try:
             data = self.load_all()
-            # Безопасный поиск ID
             ids = [int(d['id']) for d in data if d.get('id') and d['id'].isdigit()]
             op.id = max(ids, default=0) + 1
 

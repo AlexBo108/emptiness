@@ -6,7 +6,6 @@ class FinanceAnalysis:
     def __init__(self, data):
         self.df = pd.DataFrame(data)
         if not self.df.empty:
-            # errors='coerce' превратит битые данные в NaN, чтобы программа не упала
             self.df['amount'] = pd.to_numeric(self.df['amount'], errors='coerce')
             self.df['date'] = pd.to_datetime(self.df['date'], errors='coerce')
             self.df.dropna(subset=['amount', 'category'], inplace=True)
