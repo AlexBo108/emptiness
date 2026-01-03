@@ -2,26 +2,29 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 class FinanceAnalysis:
-    """Аналитика данных с использованием Pandas."""
+    """Анализ данных через Pandas."""
     def __init__(self, data):
         self.df = pd.DataFrame(data)
         if not self.df.empty:
             self.df['amount'] = pd.to_numeric(self.df['amount'], errors='coerce')
-            self.df['date'] = pd.to_datetime(self.df['date'], errors='coerce')
             self.df.dropna(subset=['amount', 'category'], inplace=True)
 
-    def plot_expenses(self):
-        """Визуализация расходов."""
+    def get_filtered_data(self, category=None):
+        """Возвращает отфильтрованные данные и их сумму."""
         if self.df.empty:
-            raise ValueError("Нет данных для анализа")
+            return [], 0.0
         
-        exp_df = self.df[self.df['op_type'] == 'expense']
-        if exp_df.empty:
-            raise ValueError("Нет данных по расходам")
+        filtered_df = self.df
+        if category and category != "Все":
+            filtered_df = self.df[self.df['category'] == category]
+            
+        total = filtered_df['amount'].sum()
+        return filtered_df.to_dict('records'), total
 
-        summary = exp_df.groupby('category')['amount'].sum()
-        plt.figure(figsize=(8, 6))
-        summary.plot(kind='pie', autopct='%1.1f%%', title='Расходы 2026')
+    def plot_expenses(self):
+        """Круговая диаграмма расходов."""
+        if self.df.empty: raise ValueError("Нет данных")
+        summary = self.df.groupby('category')['amount'].sum()
+        summary.plot(kind='pie', autopct='%1.1f%%', title='Расходы по категориям 2026')
         plt.ylabel('')
-        plt.tight_layout()
         plt.show()
