@@ -2,7 +2,7 @@ import csv
 import os
 
 class FileStorage:
-    """Хранение данных в CSV."""
+    """Управление CSV файлом."""
     def __init__(self, filename="data/finance.csv"):
         self.filename = filename
         self.fieldnames = ["id", "amount", "category", "date", "comment", "op_type"]

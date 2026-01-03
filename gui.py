@@ -8,35 +8,46 @@ from analysis import FinanceAnalysis
 class FinanceApp:
     def __init__(self, root):
         self.root = root
-        self.root.title("Финансовый планер 2026")
+        self.root.title("Финансовый менеджер 2026")
         self.storage = FileStorage()
+        
+        # Стили для превышения бюджета
+        self.style = ttk.Style()
+        self.tree_style = ttk.Style()
+        self.tree_style.configure("Treeview", rowheight=25)
+        
+        # --- Блок ввода Операций ---
+        input_frame = tk.LabelFrame(root, text="Новая запись", padx=10, pady=5)
+        input_frame.pack(fill="x", padx=10, pady=5)
 
-        # --- Блок ввода ---
-        header = tk.LabelFrame(root, text="Добавить операцию", padx=10, pady=10)
-        header.pack(fill="x", padx=10, pady=5)
-
-        tk.Label(header, text="Сумма:").grid(row=0, column=0)
-        self.ent_amt = tk.Entry(header)
+        tk.Label(input_frame, text="Сумма:").grid(row=0, column=0)
+        self.ent_amt = tk.Entry(input_frame, width=10)
         self.ent_amt.grid(row=0, column=1)
 
-        tk.Label(header, text="Дата (ГГГГ-ММ-ДД):").grid(row=0, column=2)
-        self.ent_date = tk.Entry(header)
+        tk.Label(input_frame, text="Категория:").grid(row=0, column=2)
+        self.ent_cat = tk.Entry(input_frame, width=15)
+        self.ent_cat.grid(row=0, column=3)
+
+        tk.Label(input_frame, text="Дата (ГГГГ-ММ-ДД):").grid(row=0, column=4)
+        self.ent_date = tk.Entry(input_frame, width=12)
         self.ent_date.insert(0, "2026-01-03")
-        self.ent_date.grid(row=0, column=3)
+        self.ent_date.grid(row=0, column=5, padx=5)
 
-        tk.Label(header, text="Категория:").grid(row=1, column=0)
-        self.ent_cat = tk.Entry(header)
-        self.ent_cat.grid(row=1, column=1)
+        tk.Button(input_frame, text="Добавить", command=self.add_entry, bg="#e3f2fd").grid(row=0, column=6, padx=5)
 
-        tk.Button(header, text="Сохранить", command=self.add_entry, bg="#d4edda").grid(row=1, column=2, columnspan=2, sticky="we", padx=5)
+        # --- Блок Бюджета и Фильтра ---
+        control_frame = tk.Frame(root, padx=10, pady=5)
+        control_frame.pack(fill="x")
 
-        # --- Блок фильтрации ---
-        filter_frame = tk.Frame(root, padx=10)
-        filter_frame.pack(fill="x")
+        tk.Label(control_frame, text="Плановый бюджет:").pack(side=tk.LEFT)
+        self.ent_budget = tk.Entry(control_frame, width=10)
+        self.ent_budget.insert(0, "50000")
+        self.ent_budget.pack(side=tk.LEFT, padx=5)
+        self.ent_budget.bind("<KeyRelease>", lambda e: self.refresh_table())
 
-        tk.Label(filter_frame, text="Фильтр по категории:").pack(side=tk.LEFT)
+        tk.Label(control_frame, text="Фильтр:").pack(side=tk.LEFT, padx=(20, 0))
         self.filter_var = tk.StringVar(value="Все")
-        self.filter_combo = ttk.Combobox(filter_frame, textvariable=self.filter_var, state="readonly")
+        self.filter_combo = ttk.Combobox(control_frame, textvariable=self.filter_var, state="readonly", width=15)
         self.filter_combo.pack(side=tk.LEFT, padx=5)
         self.filter_combo.bind("<<ComboboxSelected>>", lambda e: self.refresh_table())
 
@@ -44,49 +55,65 @@ class FinanceApp:
         self.tree = ttk.Treeview(root, columns=("ID", "Sum", "Cat", "Date"), show='headings')
         for col, head in zip(self.tree["columns"], ["ID", "Сумма", "Категория", "Дата"]):
             self.tree.heading(col, text=head, command=lambda c=col: sort_treeview_column(self.tree, c, False))
+            self.tree.column(col, anchor="center")
+        
+        # Настройка тега для красного цвета
+        self.tree.tag_configure('over_budget', background='#ffcdd2')
         self.tree.pack(fill="both", expand=True, padx=10, pady=5)
 
-        # --- Итоговая сумма и графики ---
+        # --- Подвал с итогами ---
         footer = tk.Frame(root, padx=10, pady=10)
         footer.pack(fill="x")
 
-        self.lbl_total = tk.Label(footer, text="Итого: 0.00", font=("Arial", 12, "bold"))
+        self.lbl_total = tk.Label(footer, text="Потрачено: 0", font=("Arial", 10))
         self.lbl_total.pack(side=tk.LEFT)
 
-        tk.Button(footer, text="📊 Построить график", command=self.show_chart).pack(side=tk.RIGHT)
-        
+        self.lbl_remain = tk.Label(footer, text="Остаток: 0", font=("Arial", 11, "bold"), padx=20)
+        self.lbl_remain.pack(side=tk.LEFT)
+
+        tk.Button(footer, text="📊 График", command=self.show_chart).pack(side=tk.RIGHT)
+
         self.refresh_table()
 
-    def update_categories(self, data):
-        """Обновляет список категорий в фильтре."""
-        categories = sorted(list(set(row['category'] for row in data)))
-        self.filter_combo['values'] = ["Все"] + categories
-
     def refresh_table(self):
-        """Обновление таблицы с учетом фильтра."""
-        all_data = self.storage.load_all()
-        self.update_categories(all_data)
-        
-        analysis = FinanceAnalysis(all_data)
-        filtered_rows, total = analysis.get_filtered_data(self.filter_var.get())
-        
+        data = self.storage.load_all()
+        # Обновление категорий в комбобоксе
+        cats = sorted(list(set(r['category'] for r in data)))
+        self.filter_combo['values'] = ["Все"] + cats
+
+        # Расчет бюджета
+        try:
+            budget_val = float(self.ent_budget.get()) if self.ent_budget.get() else 0.0
+        except ValueError:
+            budget_val = 0.0
+
+        analysis = FinanceAnalysis(data)
+        rows, total, remain = analysis.get_summary(self.filter_var.get(), budget_val)
+
         self.tree.delete(*self.tree.get_children())
-        for row in filtered_rows:
-            self.tree.insert("", tk.END, values=(row['id'], f"{row['amount']:.2f}", row['category'], row['date']))
         
-        self.lbl_total.config(text=f"Итого: {total:.2f}")
+        # Определяем, есть ли превышение общего лимита
+        is_over = remain < 0
+
+        for r in rows:
+            # Если общий остаток отрицательный, красим все отфильтрованные строки
+            tag = 'over_budget' if is_over else ''
+            self.tree.insert("", tk.END, values=(r['id'], f"{r['amount']:.2f}", r['category'], r['date']), tags=(tag,))
+
+        # Обновление текста
+        self.lbl_total.config(text=f"Потрачено: {total:.2f}")
+        self.lbl_remain.config(text=f"Остаток: {remain:.2f}", fg="red" if is_over else "green")
 
     def add_entry(self):
         amt, dt, cat = self.ent_amt.get(), self.ent_date.get(), self.ent_cat.get()
-        if validate_amount(amt) and validate_date(dt) and cat.strip():
-            op = FinancialOperation(amt, cat, dt, "comment")
-            if self.storage.save_operation(op):
+        if validate_amount(amt) and validate_date(dt) and cat:
+            if self.storage.save_operation(FinancialOperation(amt, cat, dt, "auto")):
                 self.refresh_table()
                 self.ent_amt.delete(0, tk.END)
-            else: messagebox.showerror("Ошибка", "Не удалось сохранить файл")
-        else: messagebox.showwarning("Ввод", "Проверьте сумму, категорию и формат даты (YYYY-MM-DD)")
+            else: messagebox.showerror("Ошибка", "Ошибка записи")
+        else: messagebox.showwarning("Ввод", "Неверные данные (ГГГГ-ММ-ДД)")
 
     def show_chart(self):
         try:
-            FinanceAnalysis(self.storage.load_all()).plot_expenses()
-        except Exception as e: messagebox.showinfo("Инфо", str(e))
+            FinanceAnalysis(self.storage.load_all()).plot_pie()
+        except Exception as e: messagebox.showerror("Ошибка", str(e))
