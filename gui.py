@@ -65,7 +65,7 @@ class FinanceApp:
         footer = tk.Frame(root, padx=10, pady=10)
         footer.pack(fill="x")
 
-        self.lbl_total = tk.Label(footer, text="Потрачено: 0", font=("Arial", 10))
+        self.lbl_total = tk.Label(footer, text="Потрачено: 0", font=("Arial", 11, "bold"))
         self.lbl_total.pack(side=tk.LEFT)
 
         self.lbl_remain = tk.Label(footer, text="Остаток: 0", font=("Arial", 11, "bold"), padx=20)
@@ -101,7 +101,7 @@ class FinanceApp:
             self.tree.insert("", tk.END, values=(r['id'], f"{r['amount']:.2f}", r['category'], r['date']), tags=(tag,))
 
         # Обновление текста
-        self.lbl_total.config(text=f"Потрачено: {total:.2f}")
+        self.lbl_total.config(text=f"Потрачено: {total:.2f}", fg="red")
         self.lbl_remain.config(text=f"Остаток: {remain:.2f}", fg="red" if is_over else "green")
 
     def add_entry(self):
