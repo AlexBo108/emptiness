@@ -1,11 +1,7 @@
-from gui import FinanceApp
 import tkinter as tk
+from gui import FinanceApp
 
-def main():
-    """Точка входа в приложение."""
+if __name__ == "__main__":
     root = tk.Tk()
     app = FinanceApp(root)
     root.mainloop()
-
-if __name__ == "__main__":
-    main()

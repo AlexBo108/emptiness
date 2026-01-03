@@ -2,27 +2,27 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 class FinanceAnalysis:
-    """Класс для анализа и визуализации данных."""
-    def __init__(self, data_list):
-        self.df = pd.DataFrame(data_list)
+    """Аналитика данных с использованием Pandas."""
+    def __init__(self, data):
+        self.df = pd.DataFrame(data)
         if not self.df.empty:
-            self.df['amount'] = pd.to_numeric(self.df['amount'])
-            self.df['date'] = pd.to_datetime(self.df['date'])
+            # errors='coerce' превратит битые данные в NaN, чтобы программа не упала
+            self.df['amount'] = pd.to_numeric(self.df['amount'], errors='coerce')
+            self.df['date'] = pd.to_datetime(self.df['date'], errors='coerce')
+            self.df.dropna(subset=['amount', 'category'], inplace=True)
 
-    def get_category_totals(self):
-        """Считает расходы по категориям."""
-        if self.df.empty: return "Нет данных"
-        expenses = self.df[self.df['op_type'] == 'expense']
-        return expenses.groupby('category')['amount'].sum()
-
-    def plot_pie_chart(self):
-        """Строит круговую диаграмму расходов."""
-        totals = self.get_category_totals()
-        if isinstance(totals, str): return
+    def plot_expenses(self):
+        """Визуализация расходов."""
+        if self.df.empty:
+            raise ValueError("Нет данных для анализа")
         
+        exp_df = self.df[self.df['op_type'] == 'expense']
+        if exp_df.empty:
+            raise ValueError("Нет данных по расходам")
+
+        summary = exp_df.groupby('category')['amount'].sum()
         plt.figure(figsize=(8, 6))
-        totals.plot(kind='pie', autopct='%1.1f%%')
-        plt.title("Расходы по категориям")
-        plt.ylabel("")
+        summary.plot(kind='pie', autopct='%1.1f%%', title='Расходы 2026')
+        plt.ylabel('')
+        plt.tight_layout()
         plt.show()
-        
