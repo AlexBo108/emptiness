@@ -2,7 +2,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 class FinanceAnalysis:
-    """Логика расчетов через Pandas."""
     def __init__(self, data):
         self.df = pd.DataFrame(data)
         if not self.df.empty:
@@ -10,14 +9,10 @@ class FinanceAnalysis:
             self.df.dropna(subset=['amount'], inplace=True)
 
     def get_summary(self, category_filter="Все", budget=0.0):
-        """Возвращает отфильтрованные данные, сумму и остаток бюджета."""
-        if self.df.empty:
-            return [], 0.0, budget
-
+        if self.df.empty: return [], 0.0, budget
         filtered_df = self.df
         if category_filter != "Все":
             filtered_df = self.df[self.df['category'] == category_filter]
-
         total_spent = filtered_df['amount'].sum()
         remaining = budget - total_spent
         return filtered_df.to_dict('records'), total_spent, remaining
