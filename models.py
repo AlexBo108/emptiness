@@ -13,3 +13,4 @@ class FinancialOperation:
             "id": self.id, "amount": self.amount, "category": self.category,
             "date": self.date, "comment": self.comment, "op_type": self.op_type
         }
+        
