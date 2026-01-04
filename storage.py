@@ -2,7 +2,7 @@ import csv
 import os
 
 class FileStorage:
-    """Управление хранением данных в CSV."""
+    """Хранение данных в CSV."""
     def __init__(self, filename="data/finance.csv"):
         self.filename = filename
         self.fieldnames = ["id", "amount", "category", "date", "comment", "op_type"]
@@ -10,13 +10,11 @@ class FileStorage:
             os.makedirs("data")
 
     def load_all(self):
-        if not os.path.exists(self.filename):
-            return []
+        if not os.path.exists(self.filename): return []
         try:
             with open(self.filename, 'r', encoding='utf-8') as f:
                 return [row for row in csv.DictReader(f) if row]
-        except Exception:
-            return []
+        except: return []
 
     def save_operation(self, op):
         try:
@@ -29,13 +27,13 @@ class FileStorage:
                 if file_empty: writer.writeheader()
                 writer.writerow(op.to_dict())
             return True
-        except Exception: return False
+        except: return False
 
-    def update_operation(self, updated_op):
+    def update_operation(self, op):
         data = self.load_all()
         for i, row in enumerate(data):
-            if int(row['id']) == int(updated_op.id):
-                data[i] = updated_op.to_dict()
+            if int(row['id']) == int(op.id):
+                data[i] = op.to_dict()
                 break
         try:
             with open(self.filename, 'w', newline='', encoding='utf-8') as f:
@@ -43,4 +41,4 @@ class FileStorage:
                 writer.writeheader()
                 writer.writerows(data)
             return True
-        except Exception: return False
+        except: return False
