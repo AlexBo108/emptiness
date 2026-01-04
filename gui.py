@@ -29,9 +29,9 @@ class FinanceApp:
         # --- Блок фильтров ---
         filter_fr = tk.LabelFrame(root, text="Фильтрация и Бюджет", padx=10, pady=10)
         filter_fr.pack(fill="x", padx=10, pady=5)
-        tk.Label(filter_fr, text="С:").grid(row=0, column=0)
+        tk.Label(filter_fr, text="Дата (ГГГГ-ММ-ДД) С:").grid(row=0, column=0)
         self.ent_start = tk.Entry(filter_fr, width=12); self.ent_start.grid(row=0, column=1, padx=5)
-        tk.Label(filter_fr, text="По:").grid(row=0, column=2)
+        tk.Label(filter_fr, text="Дата (ГГГГ-ММ-ДД) По:").grid(row=0, column=2)
         self.ent_end = tk.Entry(filter_fr, width=12); self.ent_end.grid(row=0, column=3, padx=5)
         tk.Label(filter_fr, text="Бюджет:").grid(row=0, column=4, padx=(15,0))
         self.ent_budget = tk.Entry(filter_fr, width=10); self.ent_budget.insert(0, "50000"); self.ent_budget.grid(row=0, column=5)
