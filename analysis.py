@@ -8,26 +8,18 @@ class FinanceAnalysis:
         if not self.df.empty:
             self.df['amount'] = pd.to_numeric(self.df['amount'], errors='coerce')
             self.df['date'] = pd.to_datetime(self.df['date'], errors='coerce')
-            self.df.dropna(subset=['amount', 'date'], inplace=True)
+            self.df.dropna(subset=['amount', 'date', 'category'], inplace=True)
 
     def get_summary(self, category_filter="Все", budget=0.0, date_start=None, date_end=None):
         if self.df.empty: return [], 0.0, budget
-        
         f_df = self.df.copy()
         
-        # Фильтр по датам
-        if date_start:
-            f_df = f_df[f_df['date'] >= pd.to_datetime(date_start)]
-        if date_end:
-            f_df = f_df[f_df['date'] <= pd.to_datetime(date_end)]
-            
-        # Фильтр по категории
-        if category_filter != "Все":
-            f_df = f_df[f_df['category'] == category_filter]
+        if date_start: f_df = f_df[f_df['date'] >= pd.to_datetime(date_start)]
+        if date_end:   f_df = f_df[f_df['date'] <= pd.to_datetime(date_end)]
+        if category_filter != "Все": f_df = f_df[f_df['category'] == category_filter]
             
         total = f_df['amount'].sum()
-        # Возвращаем дату обратно в строку для интерфейса
-        f_df['date'] = f_df['date'].dt.strftime('%Y-%m-%d')
+        f_df['date'] = f_df['date'].dt.strftime('%Y-%m-%d') # Форматируем дату обратно для интерфейса
         return f_df.to_dict('records'), total, budget - total
 
     def plot_pie(self):
@@ -37,5 +29,5 @@ class FinanceAnalysis:
 
     def plot_monthly(self):
         self.df.set_index('date').resample('MS')['amount'].sum().plot(kind='bar', color='skyblue')
-        plt.title("Траты по месяцам 2026")
+        plt.title("Динамика трат по месяцам 2026")
         plt.tight_layout(); plt.show()
