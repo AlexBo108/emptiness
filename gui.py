@@ -8,7 +8,7 @@ from analysis import FinanceAnalysis
 class FinanceApp:
     def __init__(self, root):
         self.root = root
-        self.root.title("Финансовый менеджер 2026")
+        self.root.title("Финансовый планер 2026")
         self.storage = FileStorage()
         self.editing_id = None
         self.filtered_data_cache = []
@@ -91,7 +91,7 @@ class FinanceApp:
             if self.editing_id: self.storage.update_operation(op)
             else: self.storage.save_operation(op)
             self.reset_ui()
-        else: messagebox.showwarning("Ошибка", "Проверьте сумму, категорию и дату!")
+        else: messagebox.showwarning("Ошибка", "Проверьте данные (сумма, категория, дата ГГГГ-ММ-ДД)")
 
     def reset_ui(self):
         self.editing_id = None
@@ -106,8 +106,7 @@ class FinanceApp:
         except: b = 0.0
         s_dt = self.ent_start.get() if validate_date(self.ent_start.get()) else None
         e_dt = self.ent_end.get() if validate_date(self.ent_end.get()) else None
-        ana = FinanceAnalysis(data)
-        rows, spent, rem, inc = ana.get_summary(self.filter_var.get(), b, s_dt, e_dt)
+        rows, spent, rem, inc = FinanceAnalysis(data).get_summary(self.filter_var.get(), b, s_dt, e_dt)
         self.filtered_data_cache = rows
         self.tree.delete(*self.tree.get_children())
         for r in rows:
@@ -119,12 +118,10 @@ class FinanceApp:
 
     def export_csv(self):
         if not self.filtered_data_cache:
-            messagebox.showwarning("Экспорт", "Нет данных для сохранения")
+            messagebox.showwarning("Экспорт", "Нет данных")
             return
-        path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV файлы", "*.csv")])
-        if path:
-            if self.storage.export_to_csv(self.filtered_data_cache, path):
-                messagebox.showinfo("Успех", f"Данные экспортированы в {path}")
+        path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV files", "*.csv")])
+        if path: self.storage.export_to_csv(self.filtered_data_cache, path)
 
     def reset_all_filters(self):
         self.filter_var.set("Все"); self.ent_start.delete(0, tk.END); self.ent_end.delete(0, tk.END)
