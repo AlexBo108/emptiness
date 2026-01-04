@@ -4,3 +4,4 @@ id,amount,category,date,comment,op_type
 3,300.0,Продукты,2026-01-03,Auto,expense
 4,300.0,Транспорт,2026-01-03,auto,expense
 5,300.0,Книги,2026-01-03,comment,expense
+6,500.0,Продукты,2026-01-04,,expense
