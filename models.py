@@ -1,6 +1,6 @@
 class FinancialOperation:
     """Класс сущности финансовой операции."""
-    def __init__(self, amount, category, date, comment, op_type="expense", op_id=None):
+    def __init__(self, amount, category, date, comment="", op_type="expense", op_id=None):
         self.id = op_id
         self.amount = float(amount)
         self.category = category.strip()
@@ -13,4 +13,3 @@ class FinancialOperation:
             "id": self.id, "amount": self.amount, "category": self.category,
             "date": self.date, "comment": self.comment, "op_type": self.op_type
         }
-        

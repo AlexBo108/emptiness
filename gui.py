@@ -8,52 +8,47 @@ from analysis import FinanceAnalysis
 class FinanceApp:
     def __init__(self, root):
         self.root = root
-        self.root.title("Финансовый менеджер 2026")
+        self.root.title("Финансовый планер 2026")
         self.storage = FileStorage()
-        self.editing_item_id = None
+        self.editing_id = None
+
+        # --- Форма ввода ---
+        input_fr = tk.LabelFrame(root, text="Управление операциями", padx=10, pady=10)
+        input_fr.pack(fill="x", padx=10, pady=5)
+
+        # Подписи над полями
+        tk.Label(input_fr, text="Сумма").grid(row=0, column=0, sticky="w")
+        self.ent_amt = tk.Entry(input_fr, width=15)
+        self.ent_amt.grid(row=1, column=0, padx=5)
+
+        tk.Label(input_fr, text="Категория").grid(row=0, column=1, sticky="w")
+        self.ent_cat = tk.Entry(input_fr, width=20)
+        self.ent_cat.grid(row=1, column=1, padx=5)
+
+        tk.Label(input_fr, text="Дата (ГГГГ-ММ-ДД)").grid(row=0, column=2, sticky="w")
+        self.ent_date = tk.Entry(input_fr, width=15)
+        self.ent_date.insert(0, "2026-01-04")
+        self.ent_date.grid(row=1, column=2, padx=5)
+
+        self.btn_add = tk.Button(input_fr, text="Добавить", command=self.add_entry, width=10, bg="#e1f5fe")
+        self.btn_add.grid(row=1, column=3, padx=5)
         
-        # Настройка стилей для подсветки превышения бюджета
-        self.style = ttk.Style()
-        self.style.configure("Treeview.overbudget", background='#ffcdd2')
-        self.style.configure("Treeview", rowheight=25)
+        self.btn_upd = tk.Button(input_fr, text="Изменить", command=self.update_entry, state=tk.DISABLED, width=10)
+        self.btn_upd.grid(row=1, column=4, padx=5)
 
-        # --- Блок ввода Операций ---
-        input_frame = tk.LabelFrame(root, text="Управление записью", padx=10, pady=5)
-        input_frame.pack(fill="x", padx=10, pady=5)
-
-        tk.Label(input_frame, text="Сумма:").grid(row=0, column=0)
-        self.ent_amt = tk.Entry(input_frame, width=10)
-        self.ent_amt.grid(row=0, column=1, padx=5)
-
-        tk.Label(input_frame, text="Категория:").grid(row=0, column=2)
-        self.ent_cat = tk.Entry(input_frame, width=15)
-        self.ent_cat.grid(row=0, column=3, padx=5)
-
-        tk.Label(input_frame, text="Дата (ГГГГ-ММ-ДД):").grid(row=0, column=4)
-        self.ent_date = tk.Entry(input_frame, width=12)
-        self.ent_date.insert(0, "2026-01-03")
-        self.ent_date.grid(row=0, column=5, padx=5)
-
-        self.btn_add = tk.Button(input_frame, text="Добавить", command=self.add_entry, bg="#e3f2fd")
-        self.btn_add.grid(row=0, column=6, padx=5, sticky="we")
-
-        self.btn_update = tk.Button(input_frame, text="Обновить", command=self.update_entry, bg="#fff8e1", state=tk.DISABLED)
-        self.btn_update.grid(row=0, column=7, padx=5, sticky="we")
-
-        # --- Блок Бюджета и Фильтра ---
-        control_frame = tk.Frame(root, padx=10, pady=5)
-        control_frame.pack(fill="x")
-
-        tk.Label(control_frame, text="Плановый бюджет:").pack(side=tk.LEFT)
-        self.ent_budget = tk.Entry(control_frame, width=10)
+        # --- Бюджет и Фильтр ---
+        ctrl_fr = tk.Frame(root, padx=10)
+        ctrl_fr.pack(fill="x", pady=5)
+        
+        tk.Label(ctrl_fr, text="Ваш бюджет:").pack(side=tk.LEFT)
+        self.ent_budget = tk.Entry(ctrl_fr, width=12)
         self.ent_budget.insert(0, "50000")
         self.ent_budget.pack(side=tk.LEFT, padx=5)
         self.ent_budget.bind("<KeyRelease>", lambda e: self.refresh_table())
 
-        tk.Label(control_frame, text="Фильтр:").pack(side=tk.LEFT, padx=(20, 0))
-        self.filter_var = tk.StringVar(value="Все")
-        self.filter_combo = ttk.Combobox(control_frame, textvariable=self.filter_var, state="readonly", width=15)
-        self.filter_combo.pack(side=tk.LEFT, padx=5)
+        self.filter_var = tk.StringVar(value="Все категории")
+        self.filter_combo = ttk.Combobox(ctrl_fr, textvariable=self.filter_var, state="readonly")
+        self.filter_combo.pack(side=tk.RIGHT)
         self.filter_combo.bind("<<ComboboxSelected>>", lambda e: self.refresh_table())
 
         # --- Таблица ---
@@ -63,99 +58,76 @@ class FinanceApp:
             self.tree.column(col, anchor="center")
         
         self.tree.pack(fill="both", expand=True, padx=10, pady=5)
-        self.tree.bind("<ButtonRelease-1>", self.on_tree_select)
+        self.tree.bind("<ButtonRelease-1>", self.on_select)
+        self.tree.tag_configure('over', background='#ffcdd2') # Подсветка строк при превышении
 
-        # --- Подвал с итогами и графиками ---
+        # --- Подвал с итогами ---
         footer = tk.Frame(root, padx=10, pady=10)
         footer.pack(fill="x")
-
-        self.lbl_total = tk.Label(footer, text="Потрачено: 0", font=("Arial", 11, "bold"))
-        self.lbl_total.pack(side=tk.LEFT)
-
-        self.lbl_remain = tk.Label(footer, text="Остаток: 0", font=("Arial", 11, "bold"), padx=20)
-        self.lbl_remain.pack(side=tk.LEFT)
-
-        tk.Button(footer, text="📈 График по месяцам", command=self.show_monthly_chart).pack(side=tk.RIGHT, padx=5)
-        tk.Button(footer, text="📊 График категорий", command=self.show_pie_chart).pack(side=tk.RIGHT, padx=5)
-
-        self.refresh_table()
         
-    def on_tree_select(self, event):
-        """Заполняет поля ввода данными из выбранной строки для редактирования."""
-        selected_item = self.tree.selection()
-        if selected_item:
-            values = self.tree.item(selected_item)['values']
-            self.editing_item_id = values[0] # ID
-            
-            self.ent_amt.delete(0, tk.END); self.ent_amt.insert(0, values[1])
-            self.ent_cat.delete(0, tk.END); self.ent_cat.insert(0, values[2])
-            self.ent_date.delete(0, tk.END); self.ent_date.insert(0, values[3])
-            
-            self.btn_update.config(state=tk.NORMAL)
-            self.btn_add.config(state=tk.DISABLED)
+        # Потрачено (всегда Красный и Жирный)
+        self.lbl_spent = tk.Label(footer, text="Потрачено: 0", fg="red", font=("Arial", 10, "bold"))
+        self.lbl_spent.pack(side=tk.LEFT)
 
-    def update_entry(self):
-        """Обрабатывает обновление существующей записи."""
-        if not self.editing_item_id: return
-        amt, dt, cat = self.ent_amt.get(), self.ent_date.get(), self.ent_cat.get()
-        if validate_amount(amt) and validate_date(dt) and cat:
-            updated_op = FinancialOperation(amt, cat, dt, "comment", op_id=self.editing_item_id)
-            if self.storage.update_operation(updated_op):
-                messagebox.showinfo("Успех", f"Запись ID {self.editing_item_id} обновлена.")
-                self.reset_ui_state()
-            else: messagebox.showerror("Ошибка", "Ошибка обновления данных.")
-        else: messagebox.showwarning("Ввод", "Неверные данные.")
+        # Остаток (Цвет меняется динамически)
+        self.lbl_remain = tk.Label(footer, text="Остаток: 0", font=("Arial", 10, "bold"))
+        self.lbl_remain.pack(side=tk.LEFT, padx=20)
 
-    def reset_ui_state(self):
-        """Сбрасывает интерфейс в режим добавления."""
-        self.editing_item_id = None
-        self.ent_amt.delete(0, tk.END)
-        self.ent_cat.delete(0, tk.END)
-        # self.ent_date.delete(0, tk.END)
-        self.btn_update.config(state=tk.DISABLED)
-        self.btn_add.config(state=tk.NORMAL)
+        tk.Button(footer, text="График месяцев", command=lambda: self.show_chart(True)).pack(side=tk.RIGHT)
+        tk.Button(footer, text="Круговая диаграмма", command=lambda: self.show_chart(False)).pack(side=tk.RIGHT, padx=5)
+
         self.refresh_table()
+
+    def on_select(self, event):
+        item = self.tree.selection()
+        if item:
+            v = self.tree.item(item)['values']
+            self.editing_id = v[0]
+            self.ent_amt.delete(0, tk.END); self.ent_amt.insert(0, v[1])
+            self.ent_cat.delete(0, tk.END); self.ent_cat.insert(0, v[2])
+            self.ent_date.delete(0, tk.END); self.ent_date.insert(0, v[3])
+            self.btn_upd.config(state=tk.NORMAL); self.btn_add.config(state=tk.DISABLED)
 
     def refresh_table(self):
-        """Обновление таблицы с учетом фильтра и бюджета."""
-        all_data = self.storage.load_all()
-        cats = sorted(list(set(r['category'] for r in all_data)))
-        self.filter_combo['values'] = ["Все"] + cats
+        data = self.storage.load_all()
+        cats = sorted(list(set(r['category'] for r in data)))
+        self.filter_combo['values'] = ["Все категории"] + cats
+        
+        try: b_val = float(self.ent_budget.get() or 0)
+        except: b_val = 0.0
 
-        try: budget_val = float(self.ent_budget.get()) if self.ent_budget.get() else 0.0
-        except ValueError: budget_val = 0.0
-
-        analysis = FinanceAnalysis(all_data)
-        rows, total, remain = analysis.get_summary(self.filter_var.get(), budget_val)
-
+        ana = FinanceAnalysis(data)
+        rows, spent, rem = ana.get_summary(self.filter_var.get() if self.filter_var.get() != "Все категории" else "Все", b_val)
+        
         self.tree.delete(*self.tree.get_children())
-        is_over = remain < 0
-
         for r in rows:
-            # Применяем тег стиля 'overbudget', если бюджет превышен
-            tag = 'overbudget' if is_over else ''
+            tag = 'over' if rem < 0 else ''
             self.tree.insert("", tk.END, values=(r['id'], f"{float(r['amount']):.2f}", r['category'], r['date']), tags=(tag,))
-
-        self.lbl_total.config(text=f"Потрачено: {total:.2f}", fg="red")
-        self.lbl_remain.config(text=f"Остаток: {remain:.2f}", fg="red" if is_over else "green")
+        
+        # Обновление лейблов
+        self.lbl_spent.config(text=f"Потрачено: {spent:.2f}")
+        
+        # Логика цвета Остатка
+        rem_color = "red" if rem < 0 else "green"
+        self.lbl_remain.config(text=f"Остаток: {rem:.2f}", fg=rem_color)
 
     def add_entry(self):
-        """Обработка добавления новой записи."""
-        amt, dt, cat = self.ent_amt.get(), self.ent_date.get(), self.ent_cat.get()
-        if validate_amount(amt) and validate_date(dt) and cat:
-            if self.storage.save_operation(FinancialOperation(amt, cat, dt, "auto")):
-                self.reset_ui_state()
-            else: messagebox.showerror("Ошибка", "Ошибка записи")
-        else: messagebox.showwarning("Ввод", "Неверные данные")
+        a, c, d = self.ent_amt.get(), self.ent_cat.get(), self.ent_date.get()
+        if validate_amount(a) and validate_date(d) and c:
+            self.storage.save_operation(FinancialOperation(a, c, d))
+            self.refresh_table()
+            self.ent_amt.delete(0, tk.END)
+        else: messagebox.showwarning("Ввод", "Ошибка в сумме или дате (ГГГГ-ММ-ДД)")
 
-    def show_pie_chart(self):
-        """Показывает круговую диаграмму."""
+    def update_entry(self):
+        a, c, d = self.ent_amt.get(), self.ent_cat.get(), self.ent_date.get()
+        op = FinancialOperation(a, c, d, op_id=self.editing_id)
+        if self.storage.update_operation(op):
+            self.btn_upd.config(state=tk.DISABLED); self.btn_add.config(state=tk.NORMAL)
+            self.refresh_table()
+
+    def show_chart(self, monthly):
         try:
-            FinanceAnalysis(self.storage.load_all()).plot_pie_chart()
-        except Exception as e: messagebox.showinfo("Инфо", str(e))
-        
-    def show_monthly_chart(self):
-        """Показывает график трат по месяцам."""
-        try:
-            FinanceAnalysis(self.storage.load_all()).plot_monthly_expenses()
+            ana = FinanceAnalysis(self.storage.load_all())
+            ana.plot_monthly() if monthly else ana.plot_pie()
         except Exception as e: messagebox.showinfo("Инфо", str(e))

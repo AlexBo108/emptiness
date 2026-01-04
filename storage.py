@@ -2,7 +2,7 @@ import csv
 import os
 
 class FileStorage:
-    """Управление CSV файлом с поддержкой обновления записей."""
+    """Управление CSV файлом."""
     def __init__(self, filename="data/finance.csv"):
         self.filename = filename
         self.fieldnames = ["id", "amount", "category", "date", "comment", "op_type"]
@@ -29,25 +29,18 @@ class FileStorage:
                 if file_empty: writer.writeheader()
                 writer.writerow(op.to_dict())
             return True
-        except Exception:
-            return False
-            
+        except Exception: return False
+
     def update_operation(self, updated_op):
         data = self.load_all()
-        found = False
         for i, row in enumerate(data):
             if int(row['id']) == int(updated_op.id):
                 data[i] = updated_op.to_dict()
-                found = True
                 break
-        
-        if found:
-            try:
-                with open(self.filename, 'w', newline='', encoding='utf-8') as f:
-                    writer = csv.DictWriter(f, fieldnames=self.fieldnames)
-                    writer.writeheader()
-                    writer.writerows(data)
-                return True
-            except Exception:
-                return False
-        return False
+        try:
+            with open(self.filename, 'w', newline='', encoding='utf-8') as f:
+                writer = csv.DictWriter(f, fieldnames=self.fieldnames)
+                writer.writeheader()
+                writer.writerows(data)
+            return True
+        except Exception: return False
