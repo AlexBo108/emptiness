@@ -2,7 +2,7 @@ import csv
 import os
 
 class FileStorage:
-    """Хранение данных в CSV."""
+    """Управление хранением и экспортом данных в CSV."""
     def __init__(self, filename="data/finance.csv"):
         self.filename = filename
         self.fieldnames = ["id", "amount", "category", "date", "comment", "op_type"]
@@ -10,6 +10,7 @@ class FileStorage:
             os.makedirs("data")
 
     def load_all(self):
+        """Загрузка всех записей из основного файла."""
         if not os.path.exists(self.filename): return []
         try:
             with open(self.filename, 'r', encoding='utf-8') as f:
@@ -17,6 +18,7 @@ class FileStorage:
         except: return []
 
     def save_operation(self, op):
+        """Сохранение новой записи с автоинкрементом ID."""
         try:
             data = self.load_all()
             ids = [int(d['id']) for d in data if d.get('id', '').isdigit()]
@@ -30,6 +32,7 @@ class FileStorage:
         except: return False
 
     def update_operation(self, op):
+        """Обновление существующей записи по ID."""
         data = self.load_all()
         for i, row in enumerate(data):
             if int(row['id']) == int(op.id):
@@ -40,5 +43,15 @@ class FileStorage:
                 writer = csv.DictWriter(f, fieldnames=self.fieldnames)
                 writer.writeheader()
                 writer.writerows(data)
+            return True
+        except: return False
+
+    def export_to_csv(self, data_to_export, target_path):
+        """Экспорт отфильтрованных данных в выбранный пользователем файл."""
+        try:
+            with open(target_path, 'w', newline='', encoding='utf-8') as f:
+                writer = csv.DictWriter(f, fieldnames=self.fieldnames)
+                writer.writeheader()
+                writer.writerows(data_to_export)
             return True
         except: return False
